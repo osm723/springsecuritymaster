@@ -50,4 +50,13 @@ public class IndexController {
     }
 
 
+    @GetMapping("/customParam")
+    public String customParam(String customParam) {
+        if (customParam != null) {
+            return "customParam";
+        } else {
+            return "index";
+        }
+    }
+
 }

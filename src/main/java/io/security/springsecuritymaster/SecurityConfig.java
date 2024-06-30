@@ -22,6 +22,8 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.security.web.util.matcher.AndRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -124,41 +126,72 @@ public class SecurityConfig {
     /*
     *   logout 필터
      */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/logoutSuccess").permitAll()
+//                        .anyRequest().authenticated()
+//                )
+//                .formLogin(Customizer.withDefaults())
+//                //.csrf(csrf ->csrf.disable())
+//                .logout(logout -> logout
+//                        .logoutUrl("/logoutProc")
+////                        .logoutRequestMatcher(new AntPathRequestMatcher("/logoutProc", "POST"))
+//                        .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
+//                        .logoutSuccessUrl("/logoutSuccess")
+//                        .logoutSuccessHandler(new LogoutSuccessHandler() {
+//                            @Override
+//                            public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+//                                System.out.println("logoutSuccessHandler=====");
+//                                response.sendRedirect("/logoutSuccess");
+//                            }
+//                        })
+//                        .deleteCookies("JSESSIONID", "remember-me")
+//                        .invalidateHttpSession(true)
+//                        .clearAuthentication(true)
+//                        .addLogoutHandler(new LogoutHandler() {
+//                            @Override
+//                            public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+//                                System.out.println("addLogoutHandler======");
+//                                HttpSession session = request.getSession();
+//                                session.invalidate();
+//                                SecurityContextHolder.getContextHolderStrategy().getContext().setAuthentication(null);
+//                                SecurityContextHolder.getContextHolderStrategy().clearContext();
+//                            }
+//                        })
+//                        .permitAll()
+//                );
+//
+//        return http.build();
+//    }
+
+    /*
+     *   requestCache 필터
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+
+        HttpSessionRequestCache cache = new HttpSessionRequestCache();
+        cache.setMatchingRequestParameterName("customParam");
+
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/logoutSuccess").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .successHandler(new AuthenticationSuccessHandler() {
+                            @Override
+                            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+                                SavedRequest savedRequest = cache.getRequest(request, response);
+                                String redirectUrl = savedRequest.getRedirectUrl();
+                                response.sendRedirect(redirectUrl);
+                            }
+                        })
                 )
-                .formLogin(Customizer.withDefaults())
-                //.csrf(csrf ->csrf.disable())
-                .logout(logout -> logout
-                        .logoutUrl("/logoutProc")
-//                        .logoutRequestMatcher(new AntPathRequestMatcher("/logoutProc", "POST"))
-                        .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "POST"))
-                        .logoutSuccessUrl("/logoutSuccess")
-                        .logoutSuccessHandler(new LogoutSuccessHandler() {
-                            @Override
-                            public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-                                System.out.println("logoutSuccessHandler=====");
-                                response.sendRedirect("/logoutSuccess");
-                            }
-                        })
-                        .deleteCookies("JSESSIONID", "remember-me")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .addLogoutHandler(new LogoutHandler() {
-                            @Override
-                            public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                                System.out.println("addLogoutHandler======");
-                                HttpSession session = request.getSession();
-                                session.invalidate();
-                                SecurityContextHolder.getContextHolderStrategy().getContext().setAuthentication(null);
-                                SecurityContextHolder.getContextHolderStrategy().clearContext();
-                            }
-                        })
-                        .permitAll()
+                .requestCache(c -> c
+                        .requestCache(cache)
                 );
 
         return http.build();
