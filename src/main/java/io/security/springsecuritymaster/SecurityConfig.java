@@ -6,7 +6,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
@@ -169,51 +175,176 @@ public class SecurityConfig {
     /*
      *   requestCache 필터
      */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//
+//        HttpSessionRequestCache cache = new HttpSessionRequestCache();
+//        cache.setMatchingRequestParameterName("customParam");
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/logoutSuccess").permitAll()
+//                        .anyRequest().authenticated())
+//                .formLogin(form -> form
+//                        .successHandler(new AuthenticationSuccessHandler() {
+//                            @Override
+//                            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+//                                SavedRequest savedRequest = cache.getRequest(request, response);
+//                                String redirectUrl = savedRequest.getRedirectUrl();
+//                                response.sendRedirect(redirectUrl);
+//                            }
+//                        })
+//                )
+//                .requestCache(c -> c
+//                        .requestCache(cache)
+//                );
+//
+//        return http.build();
+//    }
+
+    /*
+     *   AuthenticationManager
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
+//        AuthenticationManager authenticationManager = builder.build();
+//        //AuthenticationManager authenticationManager1 = builder.getObject();
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/logoutSuccess").permitAll()
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults()
+//                );
+//
+//        return http.build();
+//    }
+
+    /*
+     *   Provider 2개 추가
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
+//        builder.authenticationProvider(new CustomAuthenticationProvider());
+//        builder.authenticationProvider(new CustomAuthenticationProvider2());
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        //.requestMatchers("/logoutSuccess").permitAll()
+//                        .anyRequest().authenticated()
+//
+//                )
+//                .formLogin(Customizer.withDefaults())
+//                //.authenticationProvider(new CustomAuthenticationProvider())
+//                //.authenticationProvider(new CustomAuthenticationProvider2())
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     *   Bean으로 Provider 1개 추가
+     *   기존 parent에 DaoAuthenticationProvider가 customAuthenticationProvider로 대체
+     *   그렇기 때문에 parent에 customAuthenticationProvider 삭제
+     *    DaoAuthenticationProvider가 추가
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManagerBuilder builder, AuthenticationConfiguration configuration) throws Exception {
+//        AuthenticationManagerBuilder managerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+//        managerBuilder.authenticationProvider(customAuthenticationProvider());
+//
+//        // Bean에 등록된 customAuthenticationProvider 삭제
+//        ProviderManager authenticationManager = (ProviderManager) configuration.getAuthenticationManager();
+//        authenticationManager.getProviders().remove(0);
+//        // DaoAuthenticationProvider 등록
+//        builder.authenticationProvider(new DaoAuthenticationProvider());
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        //.requestMatchers("/").permitAll()
+//                        .anyRequest().authenticated()
+//
+//                )
+//                .formLogin(Customizer.withDefaults())
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     *   Bean으로 Provider 2개 추가
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManagerBuilder builder, AuthenticationConfiguration configuration) throws Exception {
+//        AuthenticationManagerBuilder managerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+//        managerBuilder.authenticationProvider(customAuthenticationProvider());
+//        managerBuilder.authenticationProvider(customAuthenticationProvider2());
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        //.requestMatchers("/").permitAll()
+//                        .anyRequest().authenticated()
+//
+//                )
+//                .formLogin(Customizer.withDefaults())
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     *
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-
-        HttpSessionRequestCache cache = new HttpSessionRequestCache();
-        cache.setMatchingRequestParameterName("customParam");
-
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/logoutSuccess").permitAll()
-                        .anyRequest().authenticated())
-                .formLogin(form -> form
-                        .successHandler(new AuthenticationSuccessHandler() {
-                            @Override
-                            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-                                SavedRequest savedRequest = cache.getRequest(request, response);
-                                String redirectUrl = savedRequest.getRedirectUrl();
-                                response.sendRedirect(redirectUrl);
-                            }
-                        })
+                        //.requestMatchers("/").permitAll()
+                        .anyRequest().authenticated()
+
                 )
-                .requestCache(c -> c
-                        .requestCache(cache)
-                );
+                .formLogin(Customizer.withDefaults())
+        ;
 
         return http.build();
     }
 
+//    @Bean
+//    public AuthenticationProvider customAuthenticationProvider() {
+//        return new CustomAuthenticationProvider();
+//    }
+
+//    @Bean
+//    public AuthenticationProvider customAuthenticationProvider2() {
+//        return new CustomAuthenticationProvider();
+//    }
+
     @Bean
     public UserDetailsService userDetailsService() {
-        UserDetails user = User.withUsername("user")
-                .password("{noop}1111")
-                .roles("USER")
-                .build();
-
-        UserDetails user1 = User.withUsername("user1")
-                .password("{noop}1111")
-                .roles("USER")
-                .build();
-
-        UserDetails user2 = User.withUsername("user2")
-                .password("{noop}1111")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(user,user1,user2);
+        return new CustomUserDetailService();
     }
+
+//    @Bean
+//    public UserDetailsService userDetailsService() {
+//        UserDetails user = User.withUsername("user")
+//                .password("{noop}1111")
+//                .roles("USER")
+//                .build();
+//
+//        UserDetails user1 = User.withUsername("user1")
+//                .password("{noop}1111")
+//                .roles("USER")
+//                .build();
+//
+//        UserDetails user2 = User.withUsername("user2")
+//                .password("{noop}1111")
+//                .roles("USER")
+//                .build();
+//
+//        return new InMemoryUserDetailsManager(user,user1,user2);
+//    }
 }
