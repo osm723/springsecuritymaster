@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -317,15 +318,84 @@ public class SecurityConfig {
     /*
      * 스프링 MVC 로그인 구현
      */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/login").permitAll()
+//                        .anyRequest().authenticated())
+////                .formLogin(Customizer.withDefaults())
+//                .csrf(AbstractHttpConfigurer::disable)
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 동시 세션 제어 - sessionManagement().maximumSessions()
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/expiredUrl","/invalidSessionUrl").permitAll()
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults())
+//                .sessionManagement(session -> session
+//                                .invalidSessionUrl("/invalidSessionUrl")
+//                                .maximumSessions(1)
+//                                .maxSessionsPreventsLogin(false)
+//                                //.maxSessionsPreventsLogin(true)
+//                                .expiredUrl("/expiredUrl")
+//                )
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 세션 고정 보호 - sessionManagement().sessionFixation()
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .anyRequest().authenticated()
+//                )
+//                .formLogin(Customizer.withDefaults())
+//                .sessionManagement(session -> session
+//                        .sessionFixation(sessionFixation -> sessionFixation
+//                                    //.none()
+//                                    .changeSessionId()
+//                                    //.newSession()
+//                                    //.migrateSession()
+//                        )
+//                )
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 세션 생성 정책 - sessionManagement().sessionCreationPolicy()
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login").permitAll()
                         .anyRequest().authenticated())
-//                .formLogin(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
+                .formLogin(Customizer.withDefaults())
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        SessionCreationPolicy.IF_REQUIRED
+                        //SessionCreationPolicy.ALWAYS
+                        //SessionCreationPolicy.STATELESS
+                        //SessionCreationPolicy.NEVER
+                        )
+                )
         ;
 
         return http.build();
