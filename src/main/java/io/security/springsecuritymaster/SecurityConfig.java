@@ -11,6 +11,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -382,6 +384,28 @@ public class SecurityConfig {
     /*
      * 세션 생성 정책 - sessionManagement().sessionCreationPolicy()
      */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults())
+//                .sessionManagement(session -> session.sessionCreationPolicy(
+//                        SessionCreationPolicy.IF_REQUIRED
+//                        //SessionCreationPolicy.ALWAYS
+//                        //SessionCreationPolicy.STATELESS
+//                        //SessionCreationPolicy.NEVER
+//                        )
+//                )
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * SessionManagementFilter / ConcurrentSessionFilter
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -389,16 +413,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(
-                        SessionCreationPolicy.IF_REQUIRED
-                        //SessionCreationPolicy.ALWAYS
-                        //SessionCreationPolicy.STATELESS
-                        //SessionCreationPolicy.NEVER
-                        )
+                .sessionManagement(session -> session
+                                .maximumSessions(2)
+                                .maxSessionsPreventsLogin(false)
+                                //.maxSessionsPreventsLogin(true)
                 )
         ;
 
         return http.build();
+    }
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
     }
 
     public CustomAuthenticationFilter customAuthenticationFilter(HttpSecurity http, AuthenticationManager authenticationManager) {

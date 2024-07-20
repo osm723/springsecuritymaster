@@ -1,5 +1,6 @@
 package io.security.springsecuritymaster;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -10,10 +11,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
 public class IndexController {
 
     @Autowired
     SecurityContextService service;
+
+    private final SessionInfoService sessionInfoService;
 
 //    @GetMapping("/")
 //    public String index() {
@@ -83,6 +87,12 @@ public class IndexController {
     @GetMapping("/expiredUrl")
     public String expiredUrl() {
         return "expiredUrl";
+    }
+
+    @GetMapping("/sessionInfo")
+    public String sessionInfo() {
+        sessionInfoService.sessionInfo();
+        return "sessionInfo";
     }
 
 }
