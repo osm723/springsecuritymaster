@@ -8,8 +8,11 @@
         function corsTest(){
             fetch("http://localhost:8081/api/users",{
                 method : "GET",
+                //method : "POST",
+                //method : "PUT",
                 headers : {
                     "Content-Type" : "text/xml",
+                    //"Content-Type" : "text/plain",
                 }
             })
                 .then(response => {
