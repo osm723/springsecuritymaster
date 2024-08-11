@@ -4,8 +4,11 @@ import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -18,11 +21,20 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.expression.DefaultHttpSecurityExpressionHandler;
+import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import java.io.IOException;
 
@@ -436,34 +448,160 @@ public class SecurityConfig {
      * 예외 처리 - exceptionHandling()
      * 예외 필터 - ExceptionTranslationFilter
      */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/login").permitAll()
+//                        .requestMatchers("/admin").hasRole("ADMIN")
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults())
+//                .exceptionHandling(exception -> exception
+//                        .authenticationEntryPoint(new AuthenticationEntryPoint() {
+//                            @Override
+//                            public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+//                                System.out.println("예외메시지 : " + authException.getMessage());
+//                                response.sendRedirect("/login");
+//                            }
+//                        })
+//                        .accessDeniedHandler(new AccessDeniedHandler() {
+//                            @Override
+//                            public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
+//                                System.out.println("예외메시지 : " + accessDeniedException.getMessage());
+//                                response.sendRedirect("/denied");
+//                            }
+//                        })
+//                );
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 요청 기반 권한 부여 - HttpSecurity.authorizeHttpRequests()
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(authorize -> authorize
+//                        .requestMatchers("/","/login").permitAll()
+//                        .requestMatchers("/user").hasAuthority("ROLE_USER") // "/user" 엔드포인트에 대해 "USER" 권한을 요구합니다.
+//                        .requestMatchers("/myPage/**").hasRole("USER") // "/mypage" 및 하위 디렉터리에 대해 "USER" 권한을 요구합니다. Ant 패턴 사용.
+//                        .requestMatchers(HttpMethod.POST).hasAuthority("ROLE_WRITE") // POST 메소드를 사용하는 모든 요청에 대해 "write" 권한을 요구합니다.
+//                        .requestMatchers(new AntPathRequestMatcher("/manager/**")).hasAuthority("ROLE_MANAGER") // "/manager" 및 하위 디렉터리에 대해 "MANAGER" 권한을 요구합니다. AntPathRequestMatcher 사용.
+//                        .requestMatchers(new MvcRequestMatcher(introspector, "/admin/payment")).hasAuthority("ROLE_ADMIN") // "/manager" 및 하위 디렉터리에 대해 "MANAGER" 권한을 요구합니다. AntPathRequestMatcher 사용.
+//                        .requestMatchers("/admin/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_MANAGER") // "/admin" 및 하위 디렉터리에 대해 "ADMIN" 또는 "MANAGER" 권한 중 하나를 요구합니다.
+//                        .requestMatchers(new RegexRequestMatcher("/resource/[A-Za-z0-9]+", null)).hasAuthority("ROLE_MANAGER") // 정규 표현식을 사용하여 "/resource/[A-Za-z0-9]+" 패턴에 "MANAGER" 권한을 요구합니다.
+//                        .anyRequest().authenticated())// 위에서 정의한 규칙 외의 모든 요청은 인증을 필요로 합니다.
+//                .formLogin(Customizer.withDefaults())
+//                .csrf(AbstractHttpConfigurer::disable);
+//
+//        return http.build();
+//    }
+
+    /*
+     * 표현식 및 커스텀 권한 구현1
+     *
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/user/{name}")
+//                        .access(new WebExpressionAuthorizationManager("#name == authentication.name"))
+//                        .requestMatchers("/admin/db")
+//                        .access(new WebExpressionAuthorizationManager("hasAuthority('ROLE_DB') or hasAuthority('ROLE_ADMIN')"))
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults())
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 표현식 및 커스텀 권한 구현2
+     * @CustomWebSecurity 빈 정의
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http, ApplicationContext context) throws Exception {
+//        DefaultHttpSecurityExpressionHandler handler = new DefaultHttpSecurityExpressionHandler();
+//        handler.setApplicationContext(context);
+//        WebExpressionAuthorizationManager manager = new WebExpressionAuthorizationManager("@CustomWebSecurity.check(authentication, request)");
+//        manager.setExpressionHandler(handler);
+//
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/custom/**").access(manager)
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults())
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 표현식 및 커스텀 권한 구현3
+     * CustomRequestMatcher 구현
+     */
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http, ApplicationContext context) throws Exception {
+//        http
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers(new CustomRequestMatcher("/admin")).hasAuthority("ROLE_ADMIN")
+//                        .anyRequest().authenticated())
+//                .formLogin(Customizer.withDefaults())
+//        ;
+//
+//        return http.build();
+//    }
+
+    /*
+     * 기본 필터
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login").permitAll()
-                        .requestMatchers("/admin").hasRole("ADMIN")
-                        .anyRequest().authenticated())
+                        //.requestMatchers("/").permitAll()
+                        .anyRequest().authenticated()
+
+                )
                 .formLogin(Customizer.withDefaults())
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(new AuthenticationEntryPoint() {
-                            @Override
-                            public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-                                System.out.println("예외메시지 : " + authException.getMessage());
-                                response.sendRedirect("/login");
-                            }
-                        })
-                        .accessDeniedHandler(new AccessDeniedHandler() {
-                            @Override
-                            public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
-                                System.out.println("예외메시지 : " + accessDeniedException.getMessage());
-                                response.sendRedirect("/denied");
-                            }
-                        })
-                );
         ;
 
         return http.build();
+    }
+
+    /*
+     * 기본 필터
+     */
+    @Bean
+    @Order(1)
+    public SecurityFilterChain securityFilterChain2(HttpSecurity http) throws Exception {
+
+        http.securityMatchers(matchers -> matchers
+                        .requestMatchers("/api/**","/oauth/**"))
+                .authorizeHttpRequests(auth -> auth
+                        //.requestMatchers("/").permitAll()
+                        .anyRequest().permitAll()
+
+                )
+                .formLogin(Customizer.withDefaults())
+        ;
+
+        return http.build();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService(){
+        UserDetails user = User.withUsername("user").password("{noop}1111").roles("USER").build();
+        UserDetails manager = User.withUsername("manager").password("{noop}1111").roles("MANAGER").build();
+        UserDetails admin = User.withUsername("admin").password("{noop}1111").roles("ADMIN","WRITE").build();
+        return  new InMemoryUserDetailsManager(user, manager, admin);
     }
 
     @Bean
@@ -492,10 +630,10 @@ public class SecurityConfig {
 //        return new CustomAuthenticationProvider();
 //    }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return new CustomUserDetailService();
-    }
+//    @Bean
+//    public UserDetailsService userDetailsService() {
+//        return new CustomUserDetailService();
+//    }
 
 //    @Bean
 //    public UserDetailsService userDetailsService() {
